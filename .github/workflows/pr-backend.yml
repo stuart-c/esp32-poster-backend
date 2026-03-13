@@ -1,0 +1,21 @@
+name: PR Backend
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/pr-backend.yml'
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+      - name: Run pytest
+        run: if [ -d backend/tests ]; then pytest backend/; else echo "No backend tests yet"; fi

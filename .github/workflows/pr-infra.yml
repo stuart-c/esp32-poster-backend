@@ -1,0 +1,31 @@
+name: PR Infra
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/pr-infra.yml'
+
+jobs:
+  test-infra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: Terraform Format Check
+        run: terraform fmt -check
+        working-directory: infra
+      - name: Run terratest
+        run: |
+          if [ -d infra/tests ]; then 
+            cd infra/tests
+            go mod tidy || true
+            go test -v ./...
+          else 
+            echo "No infra tests yet"
+          fi

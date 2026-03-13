@@ -1,0 +1,21 @@
+name: PR Frontend
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/pr-frontend.yml'
+
+jobs:
+  test-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: if [ -f frontend/package.json ]; then npm ci --prefix frontend; fi
+      - name: Run vitest
+        run: if [ -f frontend/package.json ]; then npm run test --prefix frontend; else echo "No frontend tests yet"; fi
