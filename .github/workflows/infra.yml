@@ -1,0 +1,60 @@
+name: Infra CI/CD
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/infra.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/infra.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: Terraform Format Check
+        run: terraform fmt -check
+        working-directory: infra
+      - name: Run terratest
+        run: |
+          if [ -d infra/tests ]; then 
+            cd infra/tests
+            go mod tidy || true
+            go test -v ./...
+          else 
+            echo "No infra tests yet"
+          fi
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: Terraform Init
+        run: terraform init
+        working-directory: infra
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: infra
