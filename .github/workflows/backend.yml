@@ -1,0 +1,35 @@
+name: Backend CI/CD
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+      - name: Run pytest
+        run: if [ -d backend/tests ]; then pytest backend/; else echo "No backend tests yet"; fi
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy Backend
+        run: echo "Deploy Backend (e.g. Serverless/SAM/Terraform) goes here"

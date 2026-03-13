@@ -1,0 +1,35 @@
+name: Processing CI/CD
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'processing/**'
+      - '.github/workflows/processing.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'processing/**'
+      - '.github/workflows/processing.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: if [ -f processing/requirements.txt ]; then pip install -r processing/requirements.txt; fi
+      - name: Run pytest
+        run: if [ -d processing/tests ]; then pytest processing/; else echo "No processing tests yet"; fi
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy Processing Lambda
+        run: echo "Deploy Processing (e.g. build Docker & deploy Lambda) goes here"
