@@ -9,10 +9,10 @@
 * **Creation:** Before starting a high-context task (e.g., refactoring or multi-file features), the agent should check if a dedicated worktree exists. If not, create one:
     `git worktree add -b <branch-name> .trees/<task-id> main`
 * **Environment Setup:** After creation, the agent must initialize the environment (e.g., `npm install` or `uv sync`) within that specific directory before executing code.
-* **Cleanup:** Upon successful PR merge or task completion, the agent must signal the Manager to run `git worktree remove .trees/<task-id>`.
+* **Cleanup:** Upon successful PR merge or task completion (e.g., GitHub Action verified), the agent must prompt the human user (who acts as the Manager) to approve a terminal command running `git worktree remove .trees/<task-id>`.
 
 ## 3. Concurrency & Locking
-* **Port Management:** When running local servers (Vite, Flask, etc.) from a worktree, agents must use dynamic port assignment to avoid `EADDRINUSE` conflicts with the main worktree or other agents.
+* **Port Management:** When running local servers, agents should note standard base ports (e.g., Vite: `5173`, FastAPI/Flask: `8000`, LocalStack: `4566`) and must use dynamic port assignment relative to these to avoid `EADDRINUSE` conflicts with the main worktree or other agents.
 * **Database Isolation:** If the project uses a local SQLite or dev database, agents must point to a task-specific DB instance within their `.trees/<task-id>` folder.
 
 ## 4. State Persistence

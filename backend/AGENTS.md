@@ -6,11 +6,14 @@ Manage the Python backend: API Gateway, DynamoDB, SQS, and the Image Processing 
 ## Local Development
 - Use `docker-compose.yml` to spin up LocalStack for testing.
 
-## Database Strategy (Single-Table Design)
-- **Layouts vs. Presentations:** You must separate physical display layouts from content presentations. 
+## API Framework Selection
+- An early design task for an agent should be to scope framework options (e.g., FastAPI vs Flask vs raw Lambda handlers) and present pros & cons to the user for agreement.
+
+## Database Strategy
+- **Layouts vs. Presentations:** You must separate physical display layouts from content presentations into 2 separate tables.
 - A `Layout` document defines the physical grid (Display IDs, resolutions, X/Y offsets).
 - A `Presentation` document links a Raw Image to a `Layout` ID and stores user adjustments/crops.
-- Complex entities must be stored as single JSON documents (DynamoDB Items) rather than split across relational rows.
+- The precise design of the schema should be an early task for an agent to design.
 
 ## The Image Processing Lambda
 - Must be a Docker Container Image for ECR deployment.
