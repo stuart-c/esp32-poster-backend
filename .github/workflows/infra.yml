@@ -1,4 +1,5 @@
 name: Infra CI/CD
+
 on:
   push:
     branches: [ "main" ]
@@ -12,49 +13,63 @@ on:
       - '.github/workflows/infra.yml'
 
 permissions:
-  id-token: write
-  contents: read
+  id-token: write # Allows requesting the OIDC JWT token
+  contents: read  # Required by actions/checkout
 
 jobs:
-  test:
+  terraform:
+    name: Terraform
     runs-on: ubuntu-latest
+    env:
+      AWS_REGION: eu-west-2
+    defaults:
+      run:
+        working-directory: infra
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS credentials for 'plan'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PLAN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init
+
       - name: Terraform Format Check
         run: terraform fmt -check
-        working-directory: infra
+
       - name: Run terratest
         run: |
-          if [ -d infra/tests ]; then 
-            cd infra/tests
+          if [ -d tests ]; then 
+            cd tests
             go mod tidy || true
             go test -v ./...
           else 
             echo "No infra tests yet"
           fi
 
-  deploy:
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Configure AWS Credentials
+      - name: Terraform Plan
+        run: terraform plan -input=false
+
+      - name: Configure AWS credentials for 'apply'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-      - name: Terraform Init
-        run: terraform init
-        working-directory: infra
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_APPLY }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Terraform Apply
-        run: terraform apply -auto-approve
-        working-directory: infra
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
